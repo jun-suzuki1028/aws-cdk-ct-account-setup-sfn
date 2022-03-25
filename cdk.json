@@ -27,6 +27,10 @@
     "@aws-cdk/core:target-partitions": [
       "aws",
       "aws-cn"
-    ]
+    ],
+    "lambda": {
+      "defaultMemorySize": 256,
+      "defaultTimeOut": 90
+    }
   }
 }
