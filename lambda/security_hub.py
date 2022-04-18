@@ -107,13 +107,11 @@ def lambda_handler(event, context):
     member_account_id=event["detail"]["serviceEventDetails"]["createManagedAccountStatus"]["account"]["accountId"]
     # Get Client
     member_session = get_member_session(member_account_id)
-    #実行対象のリージョン取得
-    regions=REGION_LIST
 
     # for raise error lazy
     errs = []
 
-    for region_name in regions:
+    for region_name in REGION_LIST:
         try:
             batch_disable_standards(member_session,region_name,member_account_id)
         except Exception as e:
@@ -121,7 +119,7 @@ def lambda_handler(event, context):
             logger.error(e)
             errs.append(e)
 
-    for region_name in regions:
+    for region_name in REGION_LIST:
         try:
             update_standards_control(
                 member_session,
@@ -133,7 +131,7 @@ def lambda_handler(event, context):
             logger.error(e)
             errs.append(e)
     if errs:
-        raise Exception('Failed to enable securityhub')
+        raise Exception('Failed to update securityhub')
     
     is_resources = {
         "cm_securityhub": False,
@@ -141,19 +139,18 @@ def lambda_handler(event, context):
         "cm_securityhub_control": False
     }
     
-    is_resources["cm_securityhub"] = is_describe_hub(member_session,regions)
+    is_resources["cm_securityhub"] = is_describe_hub(member_session,REGION_LIST)
     is_resources["cm_securityhub_std"] = is_get_enabled_standards(
         member_session,
-        regions,
+        REGION_LIST,
         member_account_id
         )
     is_resources["cm_securityhub_control"] = is_describe_standards_controls(
         member_session,
-        regions,
+        REGION_LIST,
         member_account_id
         )
 
-    # is_resourcesにFalseがないか確認
     if not all(is_resources.values()):
         logger.error("Failed to enable securityhub")
         logger.error(

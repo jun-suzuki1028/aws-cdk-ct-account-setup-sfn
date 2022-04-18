@@ -56,11 +56,9 @@ def lambda_handler(event, context):
     member_account_id=event["detail"]["serviceEventDetails"]["createManagedAccountStatus"]["account"]["accountId"]
     # Get Client
     member_session = get_member_session(member_account_id)
-    #実行対象のリージョン取得
-    regions=REGION_LIST
 
     errs = []
-    for region_name in regions:
+    for region_name in REGION_LIST:
         try:
             ec2 = member_session.client('ec2',region_name=region_name)
             vpc_id=get_default_vpc_id(ec2)
@@ -83,9 +81,8 @@ def lambda_handler(event, context):
     is_resources = {
         "default_vpc": False,
     }
-    is_resources["default_vpc"] = is_get_default_vpc(member_session,regions)
+    is_resources["default_vpc"] = is_get_default_vpc(member_session,REGION_LIST)
 
-    # is_resourcesにFalseがないか確認
     if not all(is_resources.values()):
         logger.error("Failed to delete default vpc")
         logger.error(

@@ -42,7 +42,7 @@ def lambda_handler(event, context):
     #アカウントレベルのS3のBPA有効化
     put_public_access_block(member_session,member_account_id)
 
-    # 有効化直後だとgetできない場合があるため5秒待機
+    # 有効化直後だとリソースの状態が確認できない場合があるため5秒待機
     sleep(5)
 
     is_resources = {
@@ -50,7 +50,6 @@ def lambda_handler(event, context):
     }
     is_resources["s3_account_level_bpa_enabled"] = is_public_access_block(member_session,member_account_id)
 
-    # is_resourcesにFalseがないか確認
     if not all(is_resources.values()):
         logger.error("Failed to enable s3 account level public_access_block")
         logger.error(
