@@ -11,7 +11,7 @@ def get_member_session(target_account_id):
     try:
         # Assume Role
         role_arn = "arn:aws:iam::%s:role/AWSControlTowerExecution" % target_account_id
-        role_session_name = "CROSS_ACCOUNT_ACCESS_FROM_CTAUDIT"
+        role_session_name = "CROSS_ACCOUNT_ACCESS_FROM_CT_MANAGEMENT_ACCOUNT"
         logger.info("- RoleArn=%s" % role_arn)
         logger.info("- RoleSessionName=%s" % role_session_name)
         target = sts_connection.assume_role(
