@@ -103,7 +103,7 @@ export class CtSetupStack extends cdk.Stack {
       })).next(new tasks.LambdaInvoke(this, "SecurityHub",{
         lambdaFunction: SecurityHubLambdaFunction,
         resultPath: '$.SecurityHub',
-      })).next(end)
+      }))
   });
   const rule = new events.Rule(this, 'AccountCheckRule', {
     ruleName: Naming.of("create-account-check-rule"),
