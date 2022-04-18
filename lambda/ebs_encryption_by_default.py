@@ -33,17 +33,14 @@ def lambda_handler(event, context):
     member_account_id=event["detail"]["serviceEventDetails"]["createManagedAccountStatus"]["account"]["accountId"]
     # Get Client
     member_session = get_member_session(member_account_id)
-
-    #実行対象のリージョン取得
-    regions=REGION_LIST
     
     #EBSデフォルト暗号化の有効化
-    enable_ebs_encryption_by_default(member_session,regions)
+    enable_ebs_encryption_by_default(member_session,REGION_LIST)
 
     is_resources = {
         "ebs_encryption_by_default": False,
     }
-    is_resources["ebs_encryption_by_default"] = is_ebs_encryption_by_default(member_session,regions)
+    is_resources["ebs_encryption_by_default"] = is_ebs_encryption_by_default(member_session,REGION_LIST)
 
     if not all(is_resources.values()):
         logger.error("Failed to enable ebs_encryption by default")
