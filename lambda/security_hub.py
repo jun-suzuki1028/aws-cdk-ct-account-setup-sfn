@@ -1,5 +1,6 @@
 import logging
 from common.get_session import get_member_session
+import time
 
 from typing import List
 from constants import (
@@ -17,17 +18,45 @@ def batch_disable_standards (session,region_name: str,member_account_id) -> None
     cis_std_arn = f"arn:aws:securityhub:{region_name}:{member_account_id}:subscription/{SECURITY_HUB_CIS_STANDARD_NAME}"
     sh.batch_disable_standards(StandardsSubscriptionArns=[cis_std_arn])
     logger.info(f"Succeeded to disable securityhub standard {SECURITY_HUB_CIS_STANDARD_NAME}@{region_name}")
+    
+    
+def batch_enable_standards (session,region_name: str) -> None:
+    sh = session.client("securityhub", region_name=region_name)
+    std_arn = f"arn:aws:securityhub:{region_name}::standards/{SECURITY_HUB_AFSBP_STANDARD_NAME}"
+    sh.batch_enable_standards(StandardsSubscriptionRequests= [{'StandardsArn': std_arn}])
+    logger.info(f"Succeeded to enable securityhub standard {SECURITY_HUB_AFSBP_STANDARD_NAME}@{region_name}")
 
 def update_standards_control (session,
                               region_name: str,
                               account_id: str,) -> None:
     sh = session.client("securityhub", region_name=region_name)
+    is_standard_status=is_get_standard_status(session,region_name,account_id)
+
+    while not is_standard_status:
+        logger.info(f"is_standard_status {is_standard_status}")
+        logger.info("Waiting for standard enabled...")
+        time.sleep(1)
+        is_standard_status=is_get_standard_status(session,region_name,account_id)
+        
     for control in SECURITY_HUB_AFSBP_DISABLE_CONTROL_LIST:
         ctl_arn = f"arn:aws:securityhub:{region_name}:{account_id}:control/{SECURITY_HUB_AFSBP_STANDARD_NAME}/{control}"
         sh.update_standards_control(StandardsControlArn=ctl_arn,
                                     ControlStatus='DISABLED',
                                     DisabledReason='init disable control')
-        logger.info(f"Succeeded to disable securityhub standards control {control}@{region_name}")    
+        logger.info(f"Succeeded to disable securityhub standards control {control}@{region_name}")   
+        
+def is_get_standard_status(session,region_name: str,account_id: str):
+    sh = session.client("securityhub", region_name=region_name)
+    std_arn = f"arn:aws:securityhub:{region_name}:{account_id}:standards/{SECURITY_HUB_AFSBP_STANDARD_NAME}"
+    res = sh.get_enabled_standards(StandardsSubscriptionArns=[std_arn])
+    standard_status = res["StandardsSubscriptions"][0]["StandardsStatus"]
+    if standard_status in ('INCOMPLETE','READY'):
+        logger.info(f"Succeeded to check securityhub standard status@{region_name}:{standard_status}")
+        is_standard_status = True
+    else:
+        logger.error(f"Failed to check securityhub standard status@{region_name}:{standard_status}")
+        is_standard_status = False
+    return is_standard_status
 
 def is_describe_hub (session,regions: List[str]) -> bool:
     check_regions = {}
@@ -49,7 +78,7 @@ def is_get_enabled_standards (session,regions: List[str],account_id: str) -> boo
             std_arn = f"arn:aws:securityhub:{region_name}:{account_id}:standards/{SECURITY_HUB_AFSBP_STANDARD_NAME}"
             res = sh.get_enabled_standards(StandardsSubscriptionArns=[std_arn])
             standard_status = res["StandardsSubscriptions"][0]["StandardsStatus"]
-            if standard_status in ('INCOMPLETE','READY','PENDING'):
+            if standard_status in ('INCOMPLETE','READY'):
                 logger.info(f"Succeeded to check securityhub standard status@{region_name}:{standard_status}")
                 check_regions[region_name] = True
             else:
@@ -113,13 +142,17 @@ def lambda_handler(event, context):
 
     for region_name in REGION_LIST:
         try:
+            batch_enable_standards(member_session,region_name)
+        except Exception as e:
+            logger.error(f'Failed to enable standard@{region_name}:{SECURITY_HUB_AFSBP_STANDARD_NAME}')
+            logger.error(e)
+            errs.append(e)
+        try:
             batch_disable_standards(member_session,region_name,member_account_id)
         except Exception as e:
             logger.error(f'Failed to disable standard@{region_name}:{SECURITY_HUB_CIS_STANDARD_NAME}')
             logger.error(e)
             errs.append(e)
-
-    for region_name in REGION_LIST:
         try:
             update_standards_control(
                 member_session,
