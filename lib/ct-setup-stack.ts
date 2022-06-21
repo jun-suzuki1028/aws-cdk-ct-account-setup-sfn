@@ -1,15 +1,20 @@
-import * as cdk from "@aws-cdk/core";
-import * as lambda from "@aws-cdk/aws-lambda";
-import * as sfn from "@aws-cdk/aws-stepfunctions";
-import * as iam from '@aws-cdk/aws-iam';
-import * as tasks from "@aws-cdk/aws-stepfunctions-tasks";
-import * as events from "@aws-cdk/aws-events";
-import * as targets from '@aws-cdk/aws-events-targets';
+import { Construct } from 'constructs';
+import {
+  Stack,
+  StackProps,
+  Duration,
+  aws_iam as iam,
+  aws_lambda as lambda,
+  aws_events as events,
+  aws_events_targets as targets,
+  aws_stepfunctions as sfn,
+  aws_stepfunctions_tasks as tasks,
+} from 'aws-cdk-lib';
 import { Naming } from './naming';
 
-export class CtSetupStack extends cdk.Stack {
+export class CtSetupStack extends Stack {
   private LambdaDefaultRuntime = lambda.Runtime.PYTHON_3_8
-  constructor(scope: cdk.Construct, id: string, props?: cdk.StackProps) {
+  constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
     const memorySize = this.node.tryGetContext("lambda").defaultMemorySize
     const timeoutSecond = this.node.tryGetContext("lambda").defaultTimeOut
@@ -44,7 +49,7 @@ export class CtSetupStack extends cdk.Stack {
       handler: "default_vpc.lambda_handler",
       memorySize: memorySize,
       role: lambdaRole,
-      timeout: cdk.Duration.seconds(timeoutSecond),
+      timeout: Duration.seconds(timeoutSecond),
       functionName: Naming.of("delete-default-vpc")
     });
 
@@ -54,7 +59,7 @@ export class CtSetupStack extends cdk.Stack {
       handler: "ebs_encryption_by_default.lambda_handler",
       memorySize: memorySize,
       role: lambdaRole,
-      timeout: cdk.Duration.seconds(timeoutSecond),
+      timeout: Duration.seconds(timeoutSecond),
       functionName: Naming.of("enable-ebs-encryption-by-default")
     });
     const PasswordPolicyLambdaFunction = new lambda.Function(this, "PasswordPolicyLambdaFunction", {
@@ -63,7 +68,7 @@ export class CtSetupStack extends cdk.Stack {
       handler: "password_policy.lambda_handler",
       memorySize: memorySize,
       role: lambdaRole,
-      timeout: cdk.Duration.seconds(timeoutSecond),
+      timeout: Duration.seconds(timeoutSecond),
       functionName: Naming.of("change-password-policy")
     });
     const PublicAccessBlockLambdaFunction = new lambda.Function(this, "PublicAccessBlockLambdaFunction", {
@@ -72,7 +77,7 @@ export class CtSetupStack extends cdk.Stack {
       handler: "public_access_block.lambda_handler",
       memorySize: memorySize,
       role: lambdaRole,
-      timeout: cdk.Duration.seconds(timeoutSecond),
+      timeout: Duration.seconds(timeoutSecond),
       functionName: Naming.of("enable-public-access-block")
     });
     const SecurityHubLambdaFunction = new lambda.Function(this, "SecurityHubLambdaFunction", {
@@ -81,7 +86,7 @@ export class CtSetupStack extends cdk.Stack {
       handler: "security_hub.lambda_handler",
       memorySize: memorySize,
       role: lambdaRole,
-      timeout: cdk.Duration.seconds(timeoutSecond),
+      timeout: Duration.seconds(timeoutSecond),
       functionName: Naming.of("change-security-hub")
     });
     const end = new sfn.Pass(this, "End", {});
